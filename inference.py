@@ -59,5 +59,5 @@ class Inference():
     
 
 seg = Inference()
-# rand = random.randint(0, 100)
-seg.infer(100)
+rand = random.randint(0, 100)
+seg.infer(rand)
