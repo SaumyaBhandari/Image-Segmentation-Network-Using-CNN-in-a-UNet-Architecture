@@ -2,8 +2,11 @@ import torch
 from unet import UNet
 from PIL import Image
 from torchvision import transforms
+import numpy as np
 import random
 import os
+from dataset import DataLoader
+import cv2
 
 
 class Inference():
@@ -23,41 +26,30 @@ class Inference():
 
 
     def __view_sample(self, x, y, y_pred):
-        x = torch.squeeze(x)
-        y = torch.squeeze(y)
-        y_pred = torch.squeeze(y_pred)
-        x = transforms.ToPILImage()(x)
-        y = transforms.ToPILImage()(y)
-        y_pred = transforms.ToPILImage()(y_pred)
-        images = [x, y_pred, y]
-        widths, heights = zip(*(i.size for i in images))
-        total_width = sum(widths)
-        max_height = max(heights)
-        new_im = Image.new('RGB', (total_width, max_height), (0, 200, 200))
-        
-        x_offset = 0
-        for im in images:
-          new_im.paste(im, (x_offset,0))
-          x_offset += im.size[0] + 4
-        new_im.show()
+
+        x = torch.squeeze(x, dim=0)
+        y = torch.squeeze(y, dim=0)
+        y = torch.cat((torch.cat((y, y), dim=0), y), dim=0)
+        y_pred = torch.squeeze(y_pred, dim=0)
+        y_pred = torch.cat((torch.cat((y_pred, y_pred), dim=0), y_pred), dim=0)
+        tensor = torch.cat((x, torch.cat((y_pred, y), dim=2)), dim=2)
+        tensor = tensor.cpu()
+        image = tensor.detach().numpy()
+        image = np.transpose(image, (1, 2, 0))
+
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        cv2.imshow('image', image)
+        cv2.waitKey(1)
 
 
-    def infer(self, ind):
-
-        images = os.listdir('segmented-images/images_test')
-        masks = os.listdir('segmented-images/masks_test')
-        trans = transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
-        ind = len(masks) - 1 
-        x = trans(Image.open(f'segmented-images/images_test/{images[ind]}'))
-        y = trans(Image.open(f'segmented-images/masks_test/{masks[ind]}'))
-        x, y = x[None, :], y[None, :]
-        x, y = x.to(self.device), y.to(self.device)
-
-        model = self.network
-        y_pred = model(x)
-        self.__view_sample(x, y, y_pred)
+    def infer(self):
+        traindata, testdata = DataLoader().load_data(1)
+        for i, (image, mask) in enumerate(testdata):
+            image, mask = image.to(self.device), mask.to(self.device)
+            model = self.network
+            mask_pred = model(image)
+            self.__view_sample(image, mask, mask_pred)
     
 
 seg = Inference()
-rand = random.randint(0, 100)
-seg.infer(rand)
+seg.infer()

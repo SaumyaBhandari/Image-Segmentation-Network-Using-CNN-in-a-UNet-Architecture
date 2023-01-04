@@ -42,7 +42,7 @@ class Trainer():
     def train(self, epochs, lr=0.0001):
 
         print("Loading Datasets...")
-        self.train_dataloader =DataLoader().load_data(self.batch_size)
+        self.train_dataloader = DataLoader().load_data(self.batch_size)
         print("Dataset Loaded... initializing parameters...")
         model = self.network
         optimizer = optim.AdamW(model.parameters(), lr)

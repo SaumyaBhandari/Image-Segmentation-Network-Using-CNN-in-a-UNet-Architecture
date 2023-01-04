@@ -11,20 +11,35 @@ class DataLoader():
     def __init__(self):
         self.transform =  transforms.Compose([transforms.Resize((256, 256)), transforms.ToTensor()])
 
+
     def make_data(self):
-        traindata = []
+        traindata, testdata = [], []
+
         for image, label  in zip(os.listdir('segmented-images/images'), os.listdir('segmented-images/masks')):
             traindata.append([f'segmented-images/images/{image}', f'segmented-images/masks/{label}'])
-        return traindata
+
+        for image, label in zip(os.listdir('segmented-images/images'), os.listdir('segmented-images/masks')):
+            testdata.append([f'segmented-images/images/{image}', f'segmented-images/masks/{label}'])
+        
+        return traindata, testdata
+
 
     def load_data(self, batch_size):
-        train_image= self.make_data()
+
+        train_image, test_image = self.make_data()
+
         train_dataset = Dataset(train_image, self.transform)
+        test_dataset = Dataset(test_image, self.transform)
+
         train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
-        return train_dataloader
+        test_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
+        
+        return train_dataloader, test_dataloader
+
 
 
 class Dataset(torch.utils.data.Dataset):
+    
     def __init__(self, data, transforms=None):
         self.dataset = data
         self.transform = transforms
